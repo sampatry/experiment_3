@@ -151,15 +151,15 @@ class TB3FinalMission(Node):
 
         # II. NAVIGATE ROUTE
         route = [
-            [3.0, 0.3],
-            [3.0, 1.8],
+            # [3.0, 0.2],
+            # [3.0, 1.8],
             [0.0, 1.8],
             ]
         waypoints = []
         for p in route:
             wp = PoseStamped()
             wp.header.frame_id = 'map'
-            wp.pose.position.x, wp.pose.position.y, wp.pose.orientation.w = p[0], p[1], 1.0
+            wp.pose.position.x, wp.pose.position.y, wp.pose.orientation.w = p[0], p[1], 0.0
             waypoints.append(deepcopy(wp))
 
         self.get_logger().info("Navigating waypoints...")
