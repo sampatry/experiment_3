@@ -14,7 +14,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 
 # MoveIt2 Action Imports
 from moveit_msgs.action import MoveGroup
-from moveit_msgs.msg import Constraints, PositionConstraint, JointConstraint, OrientationConstraint
+from moveit_msgs.msg import Constraints, PositionConstraint, JointConstraint
 from shape_msgs.msg import SolidPrimitive
 
 class TB3FinalMission(Node):
@@ -95,24 +95,24 @@ class TB3FinalMission(Node):
             approach_offset: How many meters to stay BACK from the object 
                             along the line of sight."""
 
-        # Distance from LiDAR center to Arm 'link1' center
-        LIDAR_TO_ARM_X = 0.10
+        # PHYSICAL OFFSET: Distance from LiDAR center to Arm 'link1' center
+        LIDAR_TO_ARM_X = 0.15 
 
         if pos is None:
-            # Convert LiDAR polar (dist, angle) to LiDAR-frame Cartesian
+            # 1. Convert LiDAR polar (dist, angle) to LiDAR-frame Cartesian
             x_lidar = self.closest_dist * math.cos(self.closest_angle)
             y_lidar = self.closest_dist * math.sin(self.closest_angle)
 
-            # Shift the X coordinate because the arm is behind the lidar
+            # 2. Shift the X coordinate because the arm is BEHIND the lidar
             # target_x is now the distance from the Arm Base to the object
             x_arm_total = x_lidar + LIDAR_TO_ARM_X
             y_arm_total = y_lidar
 
-            # Calculate the direct distance (Hypotenuse) from arm to object
+            # C. Calculate the direct distance (Hypotenuse) from ARM to OBJECT
             dist_to_obj = math.sqrt(x_arm_total**2 + y_arm_total**2)
 
-            # Preserve the Angle (Aspect Ratio)
-            # Find the 'ratio' of the new distance to the total distance
+            # D. Preserve the Angle (Aspect Ratio)
+            # We find the 'ratio' of the new distance to the total distance
             if dist_to_obj > approach_offset:
                 scale = (dist_to_obj - approach_offset) / dist_to_obj
                 target_x = x_arm_total * scale
@@ -132,14 +132,14 @@ class TB3FinalMission(Node):
         target_p.position.z = float(z_height)
 
         target_p.orientation.x = 0.0
-        target_p.orientation.y = 0.0 # was 0.0
+        target_p.orientation.y = 0.383 # was 0.0
         target_p.orientation.z = 0.0
-        target_p.orientation.w = 1.0 # was 1.0
+        target_p.orientation.w = 0.924 # was 1.0
 
-        # position constraint, define the target link and tolerance
+        # 3. POSITION CONSTRAINT: Define the target link and tolerance
         pos_con = PositionConstraint()
-        pos_con.header.frame_id = "link1" # Arm base
-        pos_con.link_name = "end_effector_link" # Standard TB3 link name
+        pos_con.header.frame_id = "link1"        # Arm base
+        pos_con.link_name = "end_effector_link"  # Standard TB3 link name
         
         box = SolidPrimitive()
         box.type, box.dimensions = SolidPrimitive.BOX, [0.02, 0.02, 0.02]
@@ -148,23 +148,8 @@ class TB3FinalMission(Node):
         pos_con.constraint_region.primitive_poses.append(target_p)
         pos_con.weight = 1.0
 
-        # Orientation constraint, define the target link and tolerance
-        ori_con = OrientationConstraint()
-        ori_con.header.frame_id = "link1" # same frame as position
-        ori_con.link_name = "end_effector_link"
-
-        ori_con.orientation = target_p.orientation # enforce this orientation
-
-        # Tight tolerances so it stays horizontal
-        ori_con.absolute_x_axis_tolerance = 0.05
-        ori_con.absolute_y_axis_tolerance = 0.05
-        ori_con.absolute_z_axis_tolerance = 0.05
-
-        ori_con.weight = 1.0
-
         my_constraints = Constraints()
         my_constraints.position_constraints.append(pos_con)
-        my_constraints.orientation_constraints.append(ori_con)
 
         # Pack and send goal
         goal_msg = MoveGroup.Goal()
@@ -172,47 +157,14 @@ class TB3FinalMission(Node):
         # Now append the fully built constraints object to the list
         goal_msg.request.goal_constraints.append(my_constraints)
 
-        self.get_logger().info(f"Targeting Object at Arm-X: {target_x:.2f}, Arm-Y: {target_y:.2f}, Arm-Z: {z_height:.2f}")
+        self.get_logger().info(f"Targeting Object at Arm-X: {target_x:.2f}, Arm-Y: {target_y:.2f}")
         
         # Ensure MoveIt is actually there before sending
         if not self.move_group_client.wait_for_server(timeout_sec=2.0):
             self.get_logger().error("MoveGroup action server not available! Did you launch MoveIt?")
             return
 
-        # Send the goal asynchronously
-        send_goal_future = self.move_group_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, send_goal_future)
-        goal_handle = send_goal_future.result()
-
-        if not goal_handle.accepted:
-            self.get_logger().error("Goal rejected")
-            return False
-
-        # Wait for the actual execution/planning result
-        result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
-        result = result_future.result()
-
-        # CHECK ERROR CODES
-        # MoveIt returns a MoveItErrorCodes message inside the result
-        error_code = result.result.error_code.val
-        
-        if error_code == 1:  # SUCCESS = 1
-            self.get_logger().info("Motion successful!")
-            return True
-        else:
-            # Map common codes to readable messages
-            error_map = {
-                -31: "NO_IK_SOLUTION (Beyond arm reach)",
-                -1: "PLANNING_FAILED",
-                -12: "GOAL_IN_COLLISION",
-                -14: "GOAL_CONSTRAINTS_VIOLATED",
-                -27: "INVALID_MOTION_PLAN (Goal or Start in collision)",
-                99999: "GENERAL_FAILURE"
-            }
-            err_msg = error_map.get(error_code, f"Unknown Error Code: {error_code}")
-            self.get_logger().error(f"MoveGroup failed with status: {err_msg}")
-            return False
+        return self.move_group_client.send_goal_async(goal_msg)
 
     def run_mission(self):
         # I. INITIAL POSE (Tell the robot where it is on the map)
@@ -260,18 +212,23 @@ class TB3FinalMission(Node):
         if self.navigator.getResult() == TaskResult.SUCCEEDED:
             self.get_logger().info("Arrived. Opening gripper...")
             self.send_gripper_goal(close=False) # Open first
+            time.sleep(2.0)
 
             self.get_logger().info("Lining up arm...")
             self.send_pick_goal(approach_offset=0.10)
+            time.sleep(5.0) # Wait for reach to finish
 
             self.get_logger().info("Reaching for object...")
             self.send_pick_goal(z_height=0.00)
+            time.sleep(5.0) # Wait for reach to finish
 
             self.get_logger().info("Grasping...")
             self.send_gripper_goal(close=True) # Close claws
+            time.sleep(2.0)
 
             self.get_logger().info("Picking object up...")
-            self.send_pick_goal(pos=[0.15, 0.0], z_height=0.25)
+            self.send_pick_goal(pos=[0.3, 0.0], z_height=0.10)
+            time.sleep(5.0) # Wait for reach to finish
 
         # IV. RETURN HOME
         self.get_logger().info("Returning Home...")

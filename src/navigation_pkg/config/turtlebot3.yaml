@@ -131,8 +131,8 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25 # was 0.25
-      yaw_goal_tolerance: 0.25 # was 0.25
+      xy_goal_tolerance: 0.10 # was 0.25
+      yaw_goal_tolerance: 0.20 # was 0.25
     # DWB parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
@@ -160,7 +160,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25 # was 0.25
+      xy_goal_tolerance: 0.10 # was 0.25
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -188,12 +188,12 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.10 # was 0.22
+      robot_radius: 0.22 # was 0.22
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       # filters: ["keepout_filter"] #keepout
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 10.0 # was 3.0
+        cost_scaling_factor: 3.0 # was 3.0
         inflation_radius: 0.30 # was 0.55
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
@@ -233,11 +233,12 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: True
-      robot_radius: 0.10 # was 0.22
+      robot_radius: 0.22 # was 0.22
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      filters: ["keepout_filter"] #keepout
+      plugins: ["static_layer", "obstacle_layer", "keepout_layer", "inflation_layer"]
+      # plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      # filters: ["keepout_filter"] #keepout
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -257,15 +258,18 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 10.0 # was 3.0
-        inflation_radius: 0.30 # was 0.55
+        cost_scaling_factor: 3.0 # was 3.0
+        inflation_radius: 0.10 # was 0.55
       always_send_full_costmap: True
+      keepout_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_topic: "/keepout_filter_mask"
+        map_subscribe_transient_local: True
 
-
-      keepout_filter:
-        plugin: "nav2_costmap_2d::KeepoutFilter"
-        enabled: True
-        filter_info_topic: "/costmap_filter_info"
+      # keepout_filter:
+      #   plugin: "nav2_costmap_2d::KeepoutFilter"
+      #   enabled: True
+      #   filter_info_topic: "/costmap_filter_info"
 
 map_server:
   ros__parameters:
@@ -366,18 +370,3 @@ keepout_costmap_filter_info_server:
     mask_topic: "/keepout_filter_mask"
     base: 0.0
     multiplier: 1.0
-
-
-# costmap_filter_info_server:
-#   ros__parameters:
-#     use_sim_time: True
-#     type: 0
-#     filter_info_topic: "costmap_filter_info"  # match what the node actually publishes
-#     mask_topic: "keepout_filter_mask"
-#     base: 0.0
-#     multiplier: 1.0
-
-# keepout_filter:
-#   plugin: "nav2_costmap_2d::KeepoutFilter"
-#   enabled: True
-#   filter_info_topic: "costmap_filter_info"  # was "keepout_costmap_filter_info"

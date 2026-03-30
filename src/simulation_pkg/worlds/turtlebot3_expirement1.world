@@ -161,7 +161,7 @@
 
 <!-- Obstacle 4 -->
     <model name="Obstacle4">
-      <pose> 2.5 3.7 0.1 0 0 0</pose>
+      <pose> 2.5 3.65 0.1 0 0 0</pose>
       <static>false</static>
 
       <link name="link">
