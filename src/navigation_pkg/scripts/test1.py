@@ -263,24 +263,6 @@ class TB3FinalMission(Node):
             self.get_logger().info("Arrived. Opening gripper...")
             self.send_gripper_goal(close=False) # Open first
 
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, 0.00], z_height=0.10)
-
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, -0.01], z_height=0.10)
-
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, -0.02], z_height=0.10)
-
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, -0.03], z_height=0.10)
-
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, -0.04], z_height=0.10)
-
-            # self.get_logger().info("Lining up arm...")
-            # self.send_pick_goal(pos=[0.27, -0.05], z_height=0.10)
-
             self.get_logger().info("Lining up arm...")
             self.send_pick_goal(pos=[0.20, 0.00], z_height=0.15)
 
@@ -319,6 +301,22 @@ class TB3FinalMission(Node):
         # Spinning is critical so the LiDAR data updates while moving
         while not self.navigator.isTaskComplete():
             rclpy.spin_once(self, timeout_sec=0.1)
+
+        # III. THE PICK 
+        if self.navigator.getResult() == TaskResult.SUCCEEDED:
+            
+            # self.get_logger().info("Lining up arm...")
+            # self.send_pick_goal(pos=[0.20, 0.00], z_height=0.15)
+
+            self.get_logger().info("Reaching for object...")
+            self.send_pick_goal(pos=[0.30, 0.00], z_height=0.1)
+
+            self.get_logger().info("Arrived. Opening gripper...")
+            self.send_gripper_goal(close=False) # Open first
+
+            self.get_logger().info("Picking object up...")
+            self.send_pick_goal(pos=[0.15, 0.0], z_height=0.25)
+        
 
 def main():
     rclpy.init()
