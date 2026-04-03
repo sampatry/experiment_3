@@ -302,7 +302,7 @@ class TB3FinalMission(Node):
         while not self.navigator.isTaskComplete():
             rclpy.spin_once(self, timeout_sec=0.1)
 
-        # III. THE PICK 
+        # III. THE place 
         if self.navigator.getResult() == TaskResult.SUCCEEDED:
             
             # self.get_logger().info("Lining up arm...")

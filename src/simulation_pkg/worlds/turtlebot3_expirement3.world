@@ -183,7 +183,7 @@
         </visual>
 
         <inertial>
-          <mass>1</mass>
+          <mass>0.01</mass>
           <inertia>
             <ixx>0.0005</ixx>
             <iyy>0.0005</iyy>
